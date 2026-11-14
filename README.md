@@ -5,6 +5,18 @@
 一个用 Canvas 2D 画出来的打砖块：所有图形都由代码绘制，所有音效都由 WebAudio 实时合成，
 不引入任何框架、图片或音频文件。玩网页版不过瘾，就用 Electron 打成 Windows 桌面版。
 
+## 下载 Download
+
+不想装环境、不想敲命令，直接到 [Releases](https://github.com/jiangzhiyuanqian/pojie-breakout/releases/latest) 下载：
+
+| 文件 | 说明 |
+| --- | --- |
+| `PojieBreakout-v1.0.0-x64-setup.exe` | Windows 10/11 x64 安装包，可选安装目录、创建桌面快捷方式 |
+| `PojieBreakout-v1.0.0-x64-portable.exe` | 免安装便携版，下载后双击即玩 |
+| `PojieBreakout-v1.0.0-web.html` | 单文件网页版，浏览器直接打开，无需安装 |
+
+> 程序未做代码签名，首次运行若弹出 SmartScreen 提示，点「更多信息」→「仍要运行」即可。
+
 ## 游戏画面
 
 ```text
