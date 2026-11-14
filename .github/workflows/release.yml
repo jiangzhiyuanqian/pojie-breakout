@@ -1,0 +1,171 @@
+name: Release
+
+# 触发条件：
+#   1) push 到 main，且这次推送的提交上带有 v* 标签 —— 发布 Release
+#   2) push 任意 v* 标签 —— 发布 Release
+#   3) workflow_dispatch —— 手动触发（可指定标签，留空则自动生成）
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '手动发布时的版本号（例如 v1.0.0）；留空则自动生成 v0.0.0-manual.<run_number>'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+# 同一分支/tag 的发布串行执行，避免两个 Release 抢同一个 tag
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+# 使用国内镜像加速 Electron / electron-builder 二进制下载
+env:
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+jobs:
+  # ── 1. 解析发布版本：决定 tag、是否发布、是否为预发布 ──────────────
+  meta:
+    name: 解析发布版本
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - name: 检出代码与全部标签
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: 计算版本号与预发布标记
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+            if [ -z "$TAG" ]; then
+              TAG="v0.0.0-manual.${GITHUB_RUN_NUMBER}"
+            fi
+            PUBLISH=true
+          elif [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            PUBLISH=true
+          else
+            # 推送到 main：只有当这次推送的提交上带着 v* 标签时才发布
+            TAG="$(git tag --points-at HEAD 'v*' | head -n 1)"
+            if [ -n "$TAG" ]; then
+              PUBLISH=true
+            else
+              TAG=""
+              PUBLISH=false
+            fi
+          fi
+
+          # 去掉换行，避免污染 GITHUB_OUTPUT
+          TAG="$(printf '%s' "$TAG" | tr -d '\r\n')"
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          if [[ "$TAG" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "版本：${TAG:-（无）}  发布：${PUBLISH}"
+
+  # ── 2. 构建 Windows 桌面版并发布 exe ──────────────────────────────
+  build:
+    name: 构建 Windows 桌面版
+    needs: meta
+    if: needs.meta.outputs.publish == 'true'
+    runs-on: windows-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # 需要仓库里有 package-lock.json 才能命中 npm 缓存
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci || npm install
+
+      - name: 打包 Windows 版本
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_MIRROR: ${{ env.ELECTRON_MIRROR }}
+          ELECTRON_BUILDER_BINARIES_MIRROR: ${{ env.ELECTRON_BUILDER_BINARIES_MIRROR }}
+
+      - name: 列出构建产物
+        run: Get-ChildItem -Path release -Recurse | Select-Object FullName, Length
+
+      - name: 上传桌面版产物到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.tag }}
+          name: 破界 · 打砖块 ${{ needs.meta.outputs.tag }}
+          prerelease: ${{ needs.meta.outputs.prerelease }}
+          fail_on_unmatched: false
+          generate_release_notes: true
+          files: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
+            release/*.yml
+            release/*.yaml
+            release/*.zip
+
+  # ── 3. 构建单文件网页版并一起上传 ────────────────────────────────
+  build-html:
+    name: 构建单文件网页版
+    needs: [meta, build]
+    if: needs.meta.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # 需要仓库里有 package-lock.json 才能命中 npm 缓存
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci || npm install
+        env:
+          # 这里只需要打包单文件网页版，不必下载 Electron 二进制
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
+      - name: 构建单文件 HTML
+        run: npm run build:html
+
+      - name: 列出构建产物
+        run: ls -la dist
+
+      - name: 上传单文件网页版到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.meta.outputs.tag }}
+          prerelease: ${{ needs.meta.outputs.prerelease }}
+          fail_on_unmatched: false
+          files: |
+            dist/*.html

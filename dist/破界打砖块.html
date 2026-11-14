@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>破界 · 打砖块</title>
+<style>
+/* styles.css */
+/* =========================================================================
+   破界 · 打砖块  ——  样式
+   ========================================================================= */
+:root {
+  --bg: #05070f;
+  --panel: rgba(12, 18, 36, 0.94);
+  --stroke: rgba(56, 189, 248, 0.33);
+  --text: #dbe7ff;
+  --dim: rgba(203, 213, 225, 0.55);
+  --accent: #38bdf8;
+  --gold: #facc15;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+canvas {
+  display: block;
+  width: 100vw; height: 100vh;
+  touch-action: none;
+  cursor: none;
+}
+
+/* ---------------- 通用层 ---------------- */
+.layer { position: fixed; inset: 0; pointer-events: none; }
+.hidden { display: none !important; }
+
+.overlay {
+  pointer-events: auto;
+  background: rgba(4, 7, 16, 0.74);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .18s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.panel {
+  width: min(560px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  padding: 30px 34px 26px;
+  text-align: center;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255,255,255,.03) inset;
+  animation: rise .22s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes rise { from { transform: translateY(14px) scale(.985); opacity: 0 } to { transform: none; opacity: 1 } }
+.panel.narrow { width: min(420px, 92vw); }
+.panel.wide   { width: min(760px, 94vw); }
+
+.logo {
+  margin: 0 0 6px;
+  font-size: 46px; font-weight: 800; letter-spacing: 10px;
+  color: var(--accent);
+  text-shadow: 0 0 26px rgba(56, 189, 248, .45);
+}
+.ptitle {
+  margin: 0 0 14px;
+  font-size: 30px; font-weight: 800; letter-spacing: 3px;
+}
+.subtitle { color: var(--dim); font-size: 14px; margin-bottom: 20px; }
+
+.menu-body { font-size: 15px; line-height: 1.9; color: rgba(226,232,240,.85); }
+.menu-body .row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; padding: 7px 2px;
+}
+.menu-body .row .k { color: var(--dim); font-size: 14px; }
+.menu-body .row .v { font-weight: 600; }
+.menu-body .hint-line { color: var(--dim); font-size: 13px; margin-top: 10px; line-height: 1.8; }
+.menu-body .big { font-size: 34px; font-weight: 800; color: var(--gold); letter-spacing: 2px; }
+
+.menu-actions {
+  margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+}
+.btn {
+  appearance: none; cursor: pointer;
+  padding: 10px 22px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: var(--text); font-size: 14px; font-weight: 600;
+  font-family: inherit;
+  transition: background .15s, border-color .15s, transform .08s;
+}
+.btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.3); }
+.btn:active { transform: translateY(1px); }
+.btn.primary {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 6px 20px rgba(14,165,233,.35);
+}
+.btn.primary:hover { filter: brightness(1.12); }
+.btn.ghost { background: transparent; }
+.btn.danger { border-color: rgba(248,113,113,.4); color: #fca5a5; }
+
+/* 开关 */
+.switch {
+  position: relative; width: 46px; height: 25px; flex: none;
+  border-radius: 999px; background: rgba(255,255,255,.14);
+  border: none; cursor: pointer; transition: background .18s;
+}
+.switch::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 19px; height: 19px; border-radius: 50%;
+  background: #e2e8f0; transition: transform .18s;
+}
+.switch[aria-checked="true"] { background: linear-gradient(135deg, #0ea5e9, #6366f1); }
+.switch[aria-checked="true"]::after { transform: translateX(21px); }
+
+/* 滑条 */
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 160px; height: 5px; border-radius: 999px;
+  background: rgba(255,255,255,.16); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #38bdf8; border: 2px solid #0b1220; cursor: pointer;
+}
+
+/* 分段选择 */
+.seg { display: flex; gap: 6px; }
+.seg button {
+  cursor: pointer; padding: 6px 14px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  color: var(--dim); font-size: 13px; font-weight: 600; font-family: inherit;
+  transition: all .15s;
+}
+.seg button[aria-pressed="true"] {
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-color: transparent; color: #fff;
+}
+
+/* ---------------- HUD ---------------- */
+.hud-top {
+  position: fixed;
+  left: var(--gx, 0px); top: var(--gy, 0px); width: var(--gw, 100vw);
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 16px 24px 0;
+}
+.hud-left, .hud-center, .hud-right { pointer-events: none; }
+.hud-center { text-align: center; }
+.hud-right { text-align: right; }
+
+.score { font-size: 26px; font-weight: 700; letter-spacing: 2px; color: #f8fafc; }
+.levelno { font-size: 20px; font-weight: 700; color: #e2e8f0; }
+.best { font-size: 13px; font-weight: 600; color: rgba(250,204,21,.85); margin-top: 2px; }
+.label { font-size: 11px; color: var(--dim); letter-spacing: .5px; }
+
+.lives { display: flex; gap: 6px; justify-content: flex-end; height: 10px; margin-bottom: 4px; }
+.lives i {
+  display: block; width: 26px; height: 7px; border-radius: 4px;
+  background: linear-gradient(90deg, #38bdf8, #e0f2fe);
+  box-shadow: 0 0 10px rgba(56,189,248,.6);
+}
+
+.buffs {
+  position: fixed;
+  left: calc(var(--gx, 0px) + 24px);
+  bottom: calc(100vh - var(--gy, 0px) - var(--gh, 100vh) + 18px);
+  display: flex; gap: 8px;
+}
+.buff {
+  padding: 4px 10px; border-radius: 7px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.08);
+}
+
+/* 顶部小按钮 */
+.iconbar {
+  position: fixed;
+  right: calc(100vw - var(--gx, 0px) - var(--gw, 100vw) + 24px);
+  bottom: calc(100vh - var(--gy, 0px) - var(--gh, 100vh) + 16px);
+  display: flex; gap: 8px; pointer-events: auto;
+}
+.iconbtn {
+  width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  color: var(--text); font-size: 15px; line-height: 1;
+  display: grid; place-items: center; font-family: inherit;
+  transition: background .15s;
+}
+.iconbtn:hover { background: rgba(255,255,255,.16); }
+
+/* ---------------- 关卡选择 ---------------- */
+.level-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px; margin: 6px 0 4px; text-align: left;
+}
+.lvcard {
+  position: relative; cursor: pointer; text-align: left;
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  transition: transform .12s, border-color .15s, background .15s;
+}
+.lvcard:hover:not(.locked) { transform: translateY(-2px); border-color: rgba(56,189,248,.6); background: rgba(56,189,248,.1); }
+.lvcard.locked { opacity: .42; cursor: not-allowed; }
+.lvcard .n { font-size: 17px; font-weight: 700; }
+.lvcard .nm { font-size: 13px; color: var(--dim); margin-top: 2px; }
+.lvcard .sc { font-size: 12px; color: var(--gold); margin-top: 8px; }
+.lvcard .tag {
+  position: absolute; top: 10px; right: 12px;
+  font-size: 10px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(244,114,182,.22); color: #f9a8d4; font-weight: 700;
+}
+
+/* ---------------- 提示条 ---------------- */
+.hint {
+  position: fixed;
+  left: var(--gx, 0px); width: var(--gw, 100vw);
+  bottom: calc(100vh - var(--gy, 0px) - var(--gh, 100vh) + 7px);
+  text-align: center; font-size: 12px; letter-spacing: .5px;
+  color: var(--dim); pointer-events: none; opacity: .5;
+}
+
+/* 滚动条 */
+.panel::-webkit-scrollbar { width: 8px; }
+.panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 4px; }
+
+/* 覆盖层打开时恢复正常光标 */
+body.modal canvas { cursor: default; }
+
+/* 浮动提示 */
+.toast {
+  position: fixed; left: 50%; top: 22%;
+  transform: translate(-50%, -12px);
+  padding: 11px 24px; border-radius: 12px;
+  background: rgba(10, 16, 32, .92);
+  border: 1px solid var(--stroke);
+  color: #e0f2fe; font-size: 15px; font-weight: 600;
+  letter-spacing: .5px; pointer-events: none;
+  opacity: 0; transition: opacity .22s, transform .22s;
+  box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  z-index: 50;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+</style>
+<meta name="generator" content="破界打砖块 v1.0.0">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- ====================== HUD ====================== -->
+<div id="hud" class="layer">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="score" id="hudScore">000000</div>
+      <div class="label">分数 SCORE</div>
+      <div class="best" id="hudBest">最高 0</div>
+    </div>
+    <div class="hud-center">
+      <div class="levelno" id="hudLevel">1 / 10</div>
+      <div class="label" id="hudLevelName">关卡 破晓</div>
+    </div>
+    <div class="hud-right">
+      <div class="lives" id="hudLives"></div>
+      <div class="label">生命</div>
+    </div>
+  </div>
+  <div class="buffs" id="hudBuffs"></div>
+  <div class="iconbar">
+    <button class="iconbtn" id="btnMute" title="静音 (M)">♪</button>
+    <button class="iconbtn" id="btnPause" title="暂停 (Esc)">⏸</button>
+    <button class="iconbtn" id="btnSettings" title="设置">⚙</button>
+  </div>
+</div>
+
+<!-- ====================== 菜单层 ====================== -->
+<div id="menu" class="layer overlay hidden">
+  <div class="panel" id="menuPanel">
+    <h1 class="logo" id="menuTitle">破 界</h1>
+    <div class="subtitle" id="menuSubtitle">打砖块 · 十关 · Boss 战</div>
+    <div class="menu-body" id="menuBody"></div>
+    <div class="menu-actions" id="menuActions"></div>
+  </div>
+</div>
+
+<!-- ====================== 设置弹层 ====================== -->
+<div id="settings" class="layer overlay hidden">
+  <div class="panel narrow">
+    <h2 class="ptitle">设置</h2>
+    <div class="menu-body" id="settingsBody"></div>
+    <div class="menu-actions">
+      <button class="btn" data-act="settings-close">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== 关卡选择 ====================== -->
+<div id="levels" class="layer overlay hidden">
+  <div class="panel wide">
+    <h2 class="ptitle">选择关卡</h2>
+    <div class="level-grid" id="levelGrid"></div>
+    <div class="menu-actions">
+      <button class="btn" data-act="levels-close">返回</button>
+      <button class="btn primary" data-act="levels-reset">重置进度</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== 结算 ====================== -->
+<div id="result" class="layer overlay hidden">
+  <div class="panel">
+    <h2 class="ptitle" id="resultTitle">游戏结束</h2>
+    <div class="menu-body" id="resultBody"></div>
+    <div class="menu-actions" id="resultActions"></div>
+  </div>
+</div>
+
+<div id="hint" class="hint"></div>
+
+<script>
+/* js/util.js */
+/* =========================================================================
+   破界 · 打砖块  ——  通用工具
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const TAU = Math.PI * 2;
+
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const randI = (a, b) => Math.floor(rand(a, b + 1));
+  const pick = arr => arr[(Math.random() * arr.length) | 0];
+
+  /** 缓动：帧率无关的指数逼近 */
+  const damp = (a, b, lambda, dt) => lerp(a, b, 1 - Math.exp(-lambda * dt));
+
+  /** 圆与矩形碰撞，返回法线与穿透深度；不相交返回 null */
+  function circleRect(cx, cy, r, rx, ry, rw, rh) {
+    const nx = clamp(cx, rx, rx + rw);
+    const ny = clamp(cy, ry, ry + rh);
+    const dx = cx - nx, dy = cy - ny;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > r * r) return null;
+    const d = Math.sqrt(d2);
+    if (d > 1e-4) return { nx: dx / d, ny: dy / d, depth: r - d, px: nx, py: ny };
+    // 圆心落在矩形内部：沿最近边推出
+    const l = cx - rx, rr = rx + rw - cx, t = cy - ry, b = ry + rh - cy;
+    const m = Math.min(l, rr, t, b);
+    if (m === l)  return { nx: -1, ny: 0,  depth: r + l,  px: rx, py: cy };
+    if (m === rr) return { nx: 1,  ny: 0,  depth: r + rr, px: rx + rw, py: cy };
+    if (m === t)  return { nx: 0,  ny: -1, depth: r + t,  px: cx, py: ry };
+    return { nx: 0, ny: 1, depth: r + b, px: cx, py: ry + rh };
+  }
+
+  /** #rrggbb 的明暗调整，amt ∈ [-1,1] */
+  function shade(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (amt < 0) { r *= (1 + amt); g *= (1 + amt); b *= (1 + amt); }
+    else { r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt; }
+    return `rgb(${r | 0},${g | 0},${b | 0})`;
+  }
+
+  /** 数字补零 */
+  const pad = (n, w) => String(n).padStart(w, '0');
+
+  /** 毫秒 -> mm:ss */
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ':' + pad(s % 60, 2);
+  }
+
+  P.util = { TAU, clamp, lerp, rand, randI, pick, damp, circleRect, shade, pad, fmtTime };
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/audio.js */
+/* =========================================================================
+   破界 · 打砖块  ——  音频引擎（WebAudio 实时合成，零素材）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const Audio = {
+    ctx: null,
+    master: null,
+    muted: false,
+    volume: 0.55,
+
+    init() {
+      if (this.ctx) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { this.ctx = new AC(); } catch (e) { return; }
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.knee.value = 22; comp.ratio.value = 8;
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.volume;
+      this.master.connect(comp);
+      comp.connect(this.ctx.destination);
+    },
+
+    resume() {
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+    },
+
+    setVolume(v) {
+      this.volume = v;
+      if (this.master) this.master.gain.value = this.muted ? 0 : v;
+    },
+
+    setMuted(m) {
+      this.muted = m;
+      if (this.master) this.master.gain.value = m ? 0 : this.volume;
+    },
+
+    /** 单音 */
+    tone(o) {
+      if (this.muted || !this.ctx) return;
+      const t0 = this.ctx.currentTime + (o.delay || 0);
+      const dur = o.dur || 0.12;
+      const vol = o.vol == null ? 0.2 : o.vol;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = o.type || 'square';
+      osc.frequency.setValueAtTime(o.freq || 440, t0);
+      if (o.slide) {
+        osc.frequency.exponentialRampToValueAtTime(Math.max(30, (o.freq || 440) + o.slide), t0 + dur);
+      }
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(g); g.connect(this.master);
+      osc.start(t0); osc.stop(t0 + dur + 0.03);
+    },
+
+    /** 噪声（打击、爆炸） */
+    noise(o) {
+      if (this.muted || !this.ctx) return;
+      const t0 = this.ctx.currentTime + (o.delay || 0);
+      const dur = o.dur || 0.2;
+      const vol = o.vol == null ? 0.2 : o.vol;
+      const n = Math.max(1, Math.floor(this.ctx.sampleRate * dur));
+      const buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      const biq = this.ctx.createBiquadFilter();
+      biq.type = 'bandpass'; biq.Q.value = 1.1;
+      biq.frequency.setValueAtTime(o.filt || 1400, t0);
+      if (o.sweepTo) biq.frequency.exponentialRampToValueAtTime(Math.max(40, o.sweepTo), t0 + dur);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      src.connect(biq); biq.connect(g); g.connect(this.master);
+      src.start(t0); src.stop(t0 + dur + 0.03);
+    },
+
+    // ---------------- 具体音效 ----------------
+    brick(combo) {
+      const base = 330 * Math.pow(1.0595, Math.min(combo, 14));
+      this.tone({ freq: base, dur: 0.07, type: 'triangle', vol: 0.22 });
+      this.tone({ freq: base * 2, dur: 0.05, type: 'square', vol: 0.07, delay: 0.02 });
+      this.noise({ dur: 0.09, vol: 0.10, filt: 2600, sweepTo: 700 });
+    },
+    crack() { this.tone({ freq: 560, dur: 0.05, type: 'square', vol: 0.1 }); },
+    paddle(rel) { this.tone({ freq: 300 + rel * 160, dur: 0.05, type: 'square', vol: 0.16 }); },
+    wall() { this.tone({ freq: 180, dur: 0.05, type: 'sine', vol: 0.14 }); },
+    power() {
+      [0, 0.07, 0.14].forEach((d, i) =>
+        this.tone({ freq: 440 * Math.pow(1.26, i), dur: 0.1, type: 'triangle', vol: 0.2, delay: d }));
+    },
+    laser() { this.tone({ freq: 1400, dur: 0.05, type: 'sawtooth', vol: 0.07, slide: -900 }); },
+    bossHit() {
+      this.noise({ dur: 0.16, vol: 0.2, filt: 900, sweepTo: 180 });
+      this.tone({ freq: 90, dur: 0.16, type: 'sawtooth', vol: 0.16, slide: -40 });
+    },
+    bossDie() {
+      this.noise({ dur: 0.7, vol: 0.3, filt: 1800, sweepTo: 90 });
+      [0, 0.1, 0.2, 0.32].forEach((d, i) =>
+        this.tone({ freq: 520 / (i + 1), dur: 0.3, type: 'sawtooth', vol: 0.18, delay: d }));
+    },
+    die() {
+      [0, 0.13, 0.26, 0.42].forEach((d, i) =>
+        this.tone({ freq: 420 / (i + 1), dur: 0.3, type: 'triangle', vol: 0.22, delay: d }));
+    },
+    levelUp() {
+      [0, 0.09, 0.18, 0.3].forEach((d, i) =>
+        this.tone({ freq: 392 * Math.pow(1.26, i), dur: 0.16, type: 'triangle', vol: 0.18, delay: d }));
+    },
+    win() {
+      [523, 659, 784, 1047, 1319].forEach((f, i) =>
+        this.tone({ freq: f, dur: 0.35, type: 'triangle', vol: 0.2, delay: i * 0.14 }));
+    },
+    unlock() {
+      [659, 880, 1175].forEach((f, i) =>
+        this.tone({ freq: f, dur: 0.25, type: 'triangle', vol: 0.18, delay: i * 0.1 }));
+    },
+    ui() { this.tone({ freq: 620, dur: 0.05, type: 'square', vol: 0.09 }); }
+  };
+
+  P.audio = Audio;
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/levels.js */
+/* =========================================================================
+   破界 · 打砖块  ——  关卡与 Boss 数据
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const COLS = 13, ROWS = 8;
+
+  // 砖块类型
+  //   hp 血量  color 颜色  score 基础分  bomb 范围爆炸  drop 必掉道具
+  const BRICK = {
+    '-': { hp: 1, color: '#38bdf8', score: 60 },
+    '=': { hp: 2, color: '#a78bfa', score: 90 },
+    '#': { hp: 3, color: '#f472b6', score: 140 },
+    'X': { hp: 1, color: '#fb923c', score: 120, bomb: true },
+    '?': { hp: 1, color: '#facc15', score: 80, drop: true }
+  };
+
+  // Boss 形态
+  //   name 名称  hp 血量  shots 每次弹幕数  spread 扇形张角(rad)  speed 横向速度
+  //   fireInterval 射击间隔(s)  phase2Hp 狂暴阶段触发血量比例  phase2Shots 狂暴弹幕数
+  //   colorA/colorB 渐变色
+  const BOSSES = {
+    fortress: {
+      name: '堡垒', hp: 52, shots: 1, spread: 0, speed: 120,
+      fireInterval: 1.45, phase2At: 0.5, phase2Shots: 3, phase2Spread: 0.34,
+      colorA: '#7c3aed', colorB: '#db2777', bullet: '#f87171'
+    },
+    omega: {
+      name: '终焉', hp: 78, shots: 3, spread: 0.28, speed: 210,
+      fireInterval: 1.15, phase2At: 0.45, phase2Shots: 5, phase2Spread: 0.5,
+      colorA: '#0f172a', colorB: '#7c3aed', bullet: '#facc15'
+    }
+  };
+
+  const LEVELS = [
+    { name: '破晓', grid: [
+      '      -      ',
+      '     ---     ',
+      '    -----    ',
+      '   -------   ',
+      '  ---------  ',
+      ' ----------- ',
+      '             ',
+      '             ' ] },
+
+    { name: '棱镜', grid: [
+      '- - - - - - -',
+      ' = = = = = = =',
+      '- - - - - - -',
+      ' ? = ? = ? = ?',
+      '- - - - - - -',
+      ' = = = = = = =',
+      '- - - - - - -',
+      '             ' ] },
+
+    { name: '荆棘', grid: [
+      '#############',
+      '#-----------#',
+      '#--#---#---#',
+      '#-----------#',
+      '#---XXX---#',
+      '#-----------#',
+      '#--#---#---#',
+      '#-----------#' ] },
+
+    { name: '环', grid: [
+      '  #####  ',
+      '  #---#  ',
+      ' #-----# ',
+      '#-------#',
+      '#--?--?--#',
+      '#-------#',
+      ' #-----# ',
+      '  #####  ' ] },
+
+    { name: '堡垒', boss: 'fortress', grid: [
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ' ] },
+
+    { name: '交织', grid: (() => {
+      const g = [];
+      for (let y = 0; y < ROWS; y++) {
+        let row = '';
+        for (let x = 0; x < COLS; x++) row += ((x + y) % 3 === 0) ? '#' : ((x + y) % 3 === 1 ? '=' : '-');
+        g.push(row);
+      }
+      return g;
+    })() },
+
+    { name: '双塔', grid: (() => {
+      const g = [];
+      for (let y = 0; y < ROWS; y++) {
+        let row = '';
+        for (let x = 0; x < COLS; x++) {
+          const l = x < 4, r = x > 8;
+          row += (l || r) ? ((y % 2 === 0) ? '#' : '=') : ((x === 6 && y < 3) ? '?' : ' ');
+        }
+        g.push(row);
+      }
+      return g;
+    })() },
+
+    { name: '雷区', grid: (() => {
+      const g = [];
+      for (let y = 0; y < ROWS; y++) {
+        let row = '';
+        for (let x = 0; x < COLS; x++) {
+          row += ((x * 7 + y * 3) % 11 < 2) ? 'X' : ((x + y) % 2 ? '-' : '=');
+        }
+        g.push(row);
+      }
+      return g;
+    })() },
+
+    { name: '螺旋', grid: (() => {
+      const g = [];
+      for (let y = 0; y < ROWS; y++) {
+        let row = '';
+        for (let x = 0; x < COLS; x++) {
+          const d = Math.abs(x - 6) + Math.abs(y - 3.5);
+          row += d % 2 === 0 ? '-' : (d <= 3 ? '=' : ' ');
+        }
+        g.push(row);
+      }
+      return g;
+    })() },
+
+    { name: '终焉', boss: 'omega', grid: [
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ',
+      '             ' ] }
+  ];
+
+  // 道具
+  const POWER = {
+    wide:  { color: '#34d399', label: '宽', desc: '挡板变宽', w: 1.55, dur: 16 },
+    small: { color: '#f87171', label: '窄', desc: '挡板变窄', w: 0.62, dur: 14 },
+    multi: { color: '#60a5fa', label: '多', desc: '分裂成三球', w: 1, dur: 0 },
+    laser: { color: '#facc15', label: '激', desc: '发射激光', w: 1, dur: 14 },
+    slow:  { color: '#c084fc', label: '缓', desc: '球速降低', w: 1, dur: 10 },
+    life:  { color: '#fb7185', label: '命', desc: '生命 +1', w: 1, dur: 0 }
+  };
+  const POWER_KEYS = Object.keys(POWER);
+
+  // 难度
+  const DIFFICULTY = {
+    easy:   { name: '休闲', paddle: 1.35, speed: 0.80, lives: 5, hpScale: 0.8, dropRate: 1.6, label: '休闲' },
+    normal: { name: '标准', paddle: 1.00, speed: 1.00, lives: 3, hpScale: 1.0, dropRate: 1.0, label: '标准' },
+    hard:   { name: '硬核', paddle: 0.82, speed: 1.18, lives: 2, hpScale: 1.3, dropRate: 0.7, label: '硬核' }
+  };
+
+  P.levels = { COLS, ROWS, BRICK, BOSSES, LEVELS, POWER, POWER_KEYS, DIFFICULTY };
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/storage.js */
+/* =========================================================================
+   破界 · 打砖块  ——  存档与设置（localStorage，容错降级）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const KEY = 'pojie.save.v1';
+
+  const DEFAULTS = {
+    settings: {
+      volume: 0.55,
+      muted: false,
+      difficulty: 'normal',
+      particles: true,
+      shake: true,
+      showHints: true
+    },
+    progress: {
+      unlocked: 1,          // 已解锁到第几关（1 起）
+      best: 0,              // 历史最高总分
+      levelBest: {},        // 每关最高分 { "1": 1234 }
+      levelClear: {},       // 每关是否通关 { "1": true }
+      totalGames: 0,
+      totalBricks: 0,
+      maxCombo: 0,
+      totalTime: 0         // 累计游戏毫秒
+    }
+  };
+
+  let state = clone(DEFAULTS);
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        state = {
+          settings: Object.assign({}, DEFAULTS.settings, parsed.settings || {}),
+          progress: Object.assign({}, DEFAULTS.progress, parsed.progress || {})
+        };
+        // 老版本只有 best 的存档也兼容
+        if (!parsed.progress && parsed.best) state.progress.best = parsed.best;
+      }
+    } catch (e) {
+      state = clone(DEFAULTS);
+    }
+    // 旧 key 兜底
+    try {
+      const legacy = parseInt(localStorage.getItem('pojie.best') || '0', 10);
+      if (legacy > state.progress.best) state.progress.best = legacy;
+    } catch (e) { /* 忽略 */ }
+    return state;
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { /* 隐私模式下写不进去，忽略 */ }
+  }
+
+  function get() { return state; }
+  function settings() { return state.settings; }
+  function progress() { return state.progress; }
+
+  function setSetting(key, value) {
+    state.settings[key] = value;
+    save();
+  }
+
+  function recordLevelResult(levelIdx, score, cleared, timeMs) {
+    const pr = state.progress;
+    const key = String(levelIdx + 1);
+    pr.levelBest[key] = Math.max(pr.levelBest[key] || 0, score);
+    if (cleared) pr.levelClear[key] = true;
+    if (cleared && levelIdx + 2 > pr.unlocked) {
+      pr.unlocked = Math.min(levelIdx + 2, P.levels.LEVELS.length);
+      return true; // 返回 true 表示有新的关卡解锁
+    }
+    return false;
+  }
+
+  function recordGameOver(score) {
+    const pr = state.progress;
+    pr.totalGames++;
+    if (score > pr.best) pr.best = score;
+    save();
+  }
+
+  function recordStats(bricks, combo, timeMs) {
+    const pr = state.progress;
+    pr.totalBricks += bricks;
+    pr.totalTime += timeMs;
+    if (combo > pr.maxCombo) pr.maxCombo = combo;
+    save();
+  }
+
+  function resetProgress() {
+    state.progress = clone(DEFAULTS.progress);
+    save();
+  }
+
+  load();
+
+  P.storage = {
+    get, settings, progress, setSetting,
+    recordLevelResult, recordGameOver, recordStats, resetProgress,
+    save
+  };
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/engine.js */
+/* =========================================================================
+   破界 · 打砖块  ——  游戏引擎（状态、物理、碰撞、实体）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const U = P.util, L = P.levels, A = P.audio;
+
+  const W = 960, H = 640;
+  const GX = 40, GY = 78, CW = 68, CH = 26;
+  const BASE_PADDLE_W = 132;
+  const FIXED = 1 / 120;
+
+  const G = {
+    state: 'title',        // title | play | pause | levelclear | gameover | win
+    stateT: 0,
+    score: 0,
+    lives: 3,
+    level: 0,
+    bricks: [],
+    balls: [],
+    drops: [],
+    lasers: [],
+    bullets: [],
+    particles: [],
+    waves: [],
+    boss: null,
+    paddle: { x: W / 2, w: BASE_PADDLE_W, h: 16, y: H - 46 },
+    combo: 0,
+    comboTimer: 0,
+    shake: 0,
+    hitStop: 0,
+    flash: 0,
+    banner: '',
+    bannerSub: '',
+    bannerT: 0,
+    laserTimer: 0,
+    wideTimer: 0, smallTimer: 0, laserPower: 0, slowTimer: 0,
+    slowFactor: 1,
+    mouse: { x: W / 2, y: 0, down: false },
+    keys: {},
+    stars: [],
+    // 本局统计
+    stat: { bricks: 0, hits: 0, maxCombo: 0, startedAt: 0, elapsed: 0, shots: 0 }
+  };
+
+  // 钩子（由 UI 层注册）
+  const hooks = {
+    levelClear: null,
+    gameOver: null,
+    win: null,
+    unlock: null,
+    stateChange: null
+  };
+
+  for (let i = 0; i < 90; i++) {
+    G.stars.push({ x: U.rand(0, W), y: U.rand(0, H), z: U.rand(0.3, 1), s: U.rand(0.6, 2.1), p: U.rand(0, U.TAU) });
+  }
+
+  function diff() { return L.DIFFICULTY[P.storage.settings().difficulty] || L.DIFFICULTY.normal; }
+
+  function setState(s) {
+    if (G.state === s) return;
+    G.state = s;
+    G.stateT = 0;
+    if (hooks.stateChange) hooks.stateChange(s);
+  }
+
+  // ---------------------------------------------------------------- 关卡构建
+  function buildLevel(idx) {
+    const lv = L.LEVELS[idx];
+    const d = diff();
+
+    G.bricks = []; G.balls = []; G.drops = []; G.lasers = []; G.bullets = [];
+    G.boss = null; G.combo = 0; G.comboTimer = 0;
+    G.laserPower = 0; G.slowTimer = 0; G.slowFactor = 1;
+    G.wideTimer = 0; G.smallTimer = 0;
+    G.paddle.w = BASE_PADDLE_W * d.paddle;
+    G.paddle.x = W / 2;
+    G.levelStartScore = G.score;
+
+    lv.grid.forEach((row, y) => {
+      for (let x = 0; x < row.length && x < L.COLS; x++) {
+        const ch = row[x];
+        if (ch === ' ') continue;
+        const def = L.BRICK[ch];
+        if (!def) continue;
+        const hp = Math.max(1, Math.round(def.hp * d.hpScale));
+        G.bricks.push({
+          x: GX + x * CW + 2, y: GY + y * CH + 2, w: CW - 4, h: CH - 4,
+          hp, maxHp: hp, color: def.color, score: def.score,
+          bomb: !!def.bomb, drop: !!def.drop, flash: 0, dead: false,
+          cx: 0, cy: 0
+        });
+      }
+    });
+    G.bricks.forEach(b => { b.cx = b.x + b.w / 2; b.cy = b.y + b.h / 2; });
+
+    if (lv.boss) {
+      const b = L.BOSSES[lv.boss];
+      G.boss = {
+        kind: lv.boss, name: b.name,
+        x: W / 2 - 130, y: GY + 40, w: 260, h: 66,
+        hp: Math.round(b.hp * d.hpScale), maxHp: Math.round(b.hp * d.hpScale),
+        flash: 0, phase: 0, fireT: 1.2, enraged: false, dieT: 0,
+        def: b
+      };
+    }
+
+    resetBall();
+    G.banner = lv.name;
+    G.bannerSub = '准备';
+    G.bannerT = 1.6;
+  }
+
+  function resetBall() {
+    const p = G.paddle;
+    G.balls = [{
+      x: p.x, y: p.y - 22, vx: 0, vy: 0, r: 9,
+      speed: (392 + G.level * 14) * diff().speed,
+      trail: [], stuck: true
+    }];
+  }
+
+  // ---------------------------------------------------------------- 粒子
+  function spawnParticles(x, y, color, n, spd, size) {
+    if (!P.storage.settings().particles) { n = Math.ceil(n * 0.35); }
+    for (let i = 0; i < n; i++) {
+      const a = U.rand(0, U.TAU), s = U.rand(spd * 0.25, spd);
+      G.particles.push({
+        x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - U.rand(0, 60),
+        life: 0, max: U.rand(0.35, 0.85), size: U.rand(size * 0.5, size * 1.4), color
+      });
+    }
+    if (G.particles.length > 900) G.particles.splice(0, G.particles.length - 900);
+  }
+
+  function updateParticles(dt) {
+    const ps = G.particles;
+    for (let i = ps.length - 1; i >= 0; i--) {
+      const p = ps[i];
+      p.life += dt;
+      if (p.life >= p.max) { ps.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 520 * dt;
+      p.vx *= (1 - 1.4 * dt);
+      p.vy *= (1 - 0.6 * dt);
+    }
+  }
+
+  /** 冲击波（清场时的扩散圆环） */
+  function spawnWave(x, y, r0, r1, dur, color) {
+    G.waves.push({ x, y, r0, r1, dur, t: 0, color: color || '#38bdf8' });
+  }
+  function updateWaves(dt) {
+    for (let i = G.waves.length - 1; i >= 0; i--) {
+      const w = G.waves[i];
+      w.t += dt;
+      if (w.t >= w.dur) G.waves.splice(i, 1);
+    }
+  }
+
+  // ---------------------------------------------------------------- 砖块
+  function damageBrick(b, dmg, byLaser) {
+    b.hp -= dmg;
+    b.flash = 1;
+    if (b.hp > 0) {
+      A.crack();
+      spawnParticles(b.cx + U.rand(-b.w / 2, b.w / 2), b.cy, b.color, 5, 130, 2);
+      return;
+    }
+    b.dead = true;
+    const mult = 1 + G.combo * 0.1;
+    G.score += Math.round(b.score * mult);
+    G.combo++;
+    G.comboTimer = 3;
+    G.stat.bricks++;
+    if (G.combo > G.stat.maxCombo) G.stat.maxCombo = G.combo;
+    spawnParticles(b.cx, b.cy, b.color, 16, 260, 3.2);
+    spawnParticles(b.cx, b.cy, '#ffffff', 5, 150, 2);
+    addShake(2.4);
+    A.brick(G.combo);
+
+    if (b.bomb) {
+      for (const o of G.bricks) {
+        if (o.dead || o === b) continue;
+        if (Math.hypot(o.cx - b.cx, o.cy - b.cy) < 86) damageBrick(o, 99);
+      }
+      spawnParticles(b.cx, b.cy, '#fb923c', 30, 380, 4);
+      addShake(5);
+      A.noise({ dur: 0.35, vol: 0.22, filt: 1200, sweepTo: 120 });
+    }
+    const dropRate = 0.16 * diff().dropRate;
+    if (b.drop || Math.random() < dropRate) spawnDrop(b.cx, b.cy);
+    if (byLaser) addShake(1.2);
+  }
+
+  function addShake(v) {
+    if (!P.storage.settings().shake) return;
+    G.shake = Math.min(G.shake + v, 16);
+  }
+
+  function spawnDrop(x, y) {
+    const k = U.pick(L.POWER_KEYS);
+    G.drops.push({ x, y, w: 22, h: 22, vy: 118, kind: k, spin: U.rand(0, U.TAU), life: 0 });
+  }
+
+  // ---------------------------------------------------------------- 道具
+  function applyPower(kind) {
+    const p = G.paddle;
+    A.power();
+    spawnParticles(p.x, p.y - 10, L.POWER[kind].color, 18, 260, 3);
+    switch (kind) {
+      case 'wide':
+        G.wideTimer = L.POWER.wide.dur; G.smallTimer = 0;
+        setPaddleWidth(BASE_PADDLE_W * diff().paddle * L.POWER.wide.w); break;
+      case 'small':
+        G.smallTimer = L.POWER.small.dur; G.wideTimer = 0;
+        setPaddleWidth(BASE_PADDLE_W * diff().paddle * L.POWER.small.w); break;
+      case 'multi': {
+        const src = G.balls[0];
+        if (!src) break;
+        for (let i = 0; i < 2; i++) {
+          const a = Math.atan2(src.vy, src.vx) + (i ? 0.5 : -0.5);
+          G.balls.push({
+            x: src.x, y: src.y, vx: Math.cos(a) * src.speed, vy: Math.sin(a) * src.speed,
+            r: src.r, speed: src.speed, trail: [], stuck: false
+          });
+        }
+        break;
+      }
+      case 'laser': G.laserPower = L.POWER.laser.dur; break;
+      case 'slow': G.slowTimer = L.POWER.slow.dur; G.slowFactor = 0.68; break;
+      case 'life': G.lives++; break;
+    }
+  }
+
+  function setPaddleWidth(w) {
+    G.paddle.w = w;
+    G.paddle.x = U.clamp(G.paddle.x, w / 2 + 8, W - w / 2 - 8);
+  }
+
+  // ---------------------------------------------------------------- 流程
+  function startGame(levelIdx, keepScore) {
+    A.init(); A.resume();
+    const d = diff();
+    if (!keepScore) G.score = 0;
+    G.lives = d.lives;
+    G.won = false;
+    G.stat = { bricks: 0, hits: 0, maxCombo: 0, startedAt: performance.now(), elapsed: 0, shots: 0 };
+    G.particles.length = 0; G.waves.length = 0; G.shake = 0; G.flash = 0;
+    G._waveSpawned = false;
+    G.level = U.clamp(levelIdx == null ? 0 : levelIdx, 0, L.LEVELS.length - 1);
+    buildLevel(G.level);
+    setState('play');
+  }
+
+  function launchBall() {
+    let any = false;
+    for (const b of G.balls) {
+      if (!b.stuck) continue;
+      any = true;
+      b.stuck = false;
+      const a = U.rand(-0.55, 0.55);
+      b.vx = Math.sin(a) * b.speed;
+      b.vy = -Math.cos(a) * b.speed;
+    }
+    if (any) {
+      G.stat.shots++;
+      A.tone({ freq: 660, dur: 0.09, type: 'triangle', vol: 0.16, slide: 300 });
+    }
+  }
+
+  function fireLaser() {
+    if (G.laserPower > 0 && G.laserTimer <= 0) {
+      G.laserTimer = 0.19;
+      const p = G.paddle;
+      G.lasers.push({ x: p.x - p.w / 2 + 8, y: p.y - 4, vy: -880 },
+                    { x: p.x + p.w / 2 - 8, y: p.y - 4, vy: -880 });
+      A.laser();
+    }
+  }
+
+  function nextLevel() {
+    if (G.level >= L.LEVELS.length - 1) {
+      setState('win');
+      A.win();
+      P.storage.recordGameOver(G.score);
+      if (hooks.win) hooks.win(G.score);
+      return;
+    }
+    G.level++;
+    buildLevel(G.level);
+    setState('play');
+    A.levelUp();
+  }
+
+  function loseLife() {
+    G.lives--;
+    G.combo = 0;
+    G.flash = 0.55;
+    addShake(8);
+    A.die();
+    if (G.lives <= 0) {
+      setState('gameover');
+      P.storage.recordGameOver(G.score);
+      P.storage.recordStats(G.stat.bricks, G.stat.maxCombo, G.stat.elapsed);
+      if (hooks.gameOver) hooks.gameOver(G.score, G.stat);
+    } else {
+      G.balls = []; G.bullets = []; G.laserPower = 0;
+      resetBall();
+    }
+  }
+
+  function killBoss() {
+    const bo = G.boss;
+    if (!bo) return;
+    G.hitStop = 0.16;
+    addShake(18);
+    G.flash = 0.9;
+    for (let i = 0; i < 5; i++) {
+      spawnParticles(bo.x + U.rand(0, bo.w), bo.y + U.rand(0, bo.h),
+        U.pick(['#f472b6', '#fb923c', '#facc15', '#ffffff']), 22, 420, 4);
+    }
+    G.score += 2500;
+    A.bossDie();
+    bo.hp = 0;
+  }
+
+  // ---------------------------------------------------------------- 主更新
+  function update(dt) {
+    G.stateT += dt;
+    G.shake *= Math.pow(0.0016, dt);
+    G.flash *= Math.pow(0.0009, dt);
+    G.bannerT = Math.max(0, G.bannerT - dt);
+    G.comboTimer = Math.max(0, G.comboTimer - dt);
+    if (G.comboTimer <= 0) G.combo = 0;
+    updateParticles(dt);
+    updateWaves(dt);
+
+    for (const s of G.stars) {
+      s.y += 14 * s.z * dt;
+      if (s.y > H) { s.y = -4; s.x = U.rand(0, W); }
+    }
+
+    if (G.state === 'title') return;
+    if (G.state === 'levelclear') {
+      if (!G._waveSpawned) {
+        G._waveSpawned = true;
+        spawnWave(P.engine.W / 2, P.engine.H - 60, 20, 760, 0.85, '#7dd3fc');
+        spawnWave(P.engine.W / 2, P.engine.H - 60, 10, 520, 0.6, '#facc15');
+        if (hooks.levelClear) hooks.levelClear(G.level + 1);
+      }
+      if (G.stateT > 1.3) {
+        const lvlScore = Math.max(0, G.score - (G.levelStartScore || 0));
+        const cleared = P.storage.recordLevelResult(G.level, lvlScore, true, G.stat.elapsed);
+        if (cleared && hooks.unlock && G.level + 2 <= P.levels.LEVELS.length) hooks.unlock(G.level + 2);
+        nextLevel();
+      }
+      return;
+    }
+    G._waveSpawned = false;
+    if (G.state !== 'play') return;
+    if (G.hitStop > 0) { G.hitStop -= dt; return; }
+
+    G.stat.elapsed += dt * 1000;
+
+    // ---- 挡板 ----
+    const p = G.paddle;
+    let target = G.mouse.x;
+    if (G.keys['ArrowLeft']) { target -= 460 * dt; G.mouse.x = target; }
+    if (G.keys['ArrowRight']) { target += 460 * dt; G.mouse.x = target; }
+    const minX = p.w / 2 + 8, maxX = W - p.w / 2 - 8;
+    p.x = U.damp(p.x, U.clamp(target, minX, maxX), 22, dt);
+
+    // ---- 道具计时 ----
+    if (G.wideTimer > 0) { G.wideTimer -= dt; if (G.wideTimer <= 0) setPaddleWidth(BASE_PADDLE_W * diff().paddle); }
+    if (G.smallTimer > 0) { G.smallTimer -= dt; if (G.smallTimer <= 0) setPaddleWidth(BASE_PADDLE_W * diff().paddle); }
+    if (G.laserPower > 0) G.laserPower -= dt;
+    if (G.slowTimer > 0) { G.slowTimer -= dt; if (G.slowTimer <= 0) G.slowFactor = 1; }
+    G.laserTimer = Math.max(0, G.laserTimer - dt);
+    fireLaser();
+
+    for (const b of G.balls) if (b.stuck) { b.x = p.x; b.y = p.y - 22; }
+
+    // ---- 球 ----
+    const step = 5;
+    for (let bi = G.balls.length - 1; bi >= 0; bi--) {
+      const b = G.balls[bi];
+      if (b.stuck) continue;
+      const vlen = Math.hypot(b.vx, b.vy) || 1;
+      const sp = b.speed * G.slowFactor;
+      let vx = (b.vx / vlen) * sp, vy = (b.vy / vlen) * sp;
+      const dist = sp * dt;
+      const n = Math.max(1, Math.ceil(dist / step));
+      const sdt = dt / n;
+      let dead = false;
+
+      for (let s = 0; s < n && !dead; s++) {
+        b.x += vx * sdt; b.y += vy * sdt;
+
+        if (b.x - b.r < 0) { b.x = b.r; vx = Math.abs(vx); A.wall(); }
+        if (b.x + b.r > W) { b.x = W - b.r; vx = -Math.abs(vx); A.wall(); }
+        if (b.y - b.r < 0) { b.y = b.r; vy = Math.abs(vy); A.wall(); }
+
+        // 挡板
+        const pr = U.circleRect(b.x, b.y, b.r, p.x - p.w / 2, p.y, p.w, p.h);
+        if (pr && vy > 0) {
+          const rel = U.clamp((b.x - (p.x - p.w / 2)) / p.w, -1, 1);
+          b.speed = Math.min(b.speed * 1.012, 720);
+          const ang = rel * (65 * Math.PI / 180);
+          b.vx = Math.sin(ang) * b.speed;
+          b.vy = -Math.cos(ang) * b.speed;
+          vx = b.vx; vy = b.vy;
+          b.y = p.y - b.r - 0.5;
+          G.combo = 0; G.comboTimer = 0;
+          addShake(1.4);
+          spawnParticles(b.x, b.y, '#7dd3fc', 6, 150, 2);
+          A.paddle(rel);
+        }
+
+        // 砖块
+        for (const br of G.bricks) {
+          if (br.dead) continue;
+          const c = U.circleRect(b.x, b.y, b.r, br.x, br.y, br.w, br.h);
+          if (!c) continue;
+          const dot = vx * c.nx + vy * c.ny;
+          vx -= 2 * dot * c.nx; vy -= 2 * dot * c.ny;
+          b.x += c.nx * (c.depth + 0.6);
+          b.y += c.ny * (c.depth + 0.6);
+          if (Math.abs(vy) < 60) vy = (vy >= 0 ? 1 : -1) * 60;
+          b.vx = vx; b.vy = vy;
+          G.stat.hits++;
+          damageBrick(br, 1);
+          break;
+        }
+
+        // Boss
+        const bo = G.boss;
+        if (bo && bo.hp > 0) {
+          const c = U.circleRect(b.x, b.y, b.r, bo.x, bo.y, bo.w, bo.h);
+          if (c) {
+            const dot = vx * c.nx + vy * c.ny;
+            vx -= 2 * dot * c.nx; vy -= 2 * dot * c.ny;
+            b.x += c.nx * (c.depth + 0.6);
+            b.y += c.ny * (c.depth + 0.6);
+            bo.hp -= 1; bo.flash = 1;
+            G.score += 25;
+            G.stat.hits++;
+            spawnParticles(b.x, b.y, '#f472b6', 6, 200, 2.5);
+            A.bossHit();
+            addShake(2.2);
+            if (bo.hp <= 0) killBoss();
+          }
+        }
+
+        if (b.y - b.r > H + 20) dead = true;
+      }
+
+      if (dead) {
+        G.balls.splice(bi, 1);
+        if (G.balls.length === 0) loseLife();
+        continue;
+      }
+
+      b.vx = vx; b.vy = vy;
+      b.trail.push({ x: b.x, y: b.y });
+      if (b.trail.length > 14) b.trail.shift();
+    }
+
+    // ---- 激光 ----
+    for (let i = G.lasers.length - 1; i >= 0; i--) {
+      const l = G.lasers[i];
+      l.y += l.vy * dt;
+      if (l.y < -10) { G.lasers.splice(i, 1); continue; }
+      for (const br of G.bricks) {
+        if (br.dead) continue;
+        if (l.x >= br.x && l.x <= br.x + br.w && l.y <= br.y + br.h && l.y >= br.y - 6) {
+          damageBrick(br, 1, true);
+          spawnParticles(l.x, l.y, '#facc15', 5, 160, 2);
+          G.lasers.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+    // ---- Boss 行为 ----
+    const bo = G.boss;
+    if (bo && bo.hp > 0) {
+      bo.flash = Math.max(0, bo.flash - dt * 4);
+      bo.phase += dt;
+      const d = bo.def;
+      if (!bo.enraged && bo.hp / bo.maxHp <= d.phase2At) {
+        bo.enraged = true;
+        bo.fireT = 0.4;
+        G.flash = Math.max(G.flash, 0.25);
+        A.bossDie();
+      }
+      const spd = d.speed * (bo.enraged ? 1.55 : 1);
+      bo.x = W / 2 - bo.w / 2 + Math.sin(bo.phase * 0.9) * (W / 2 - bo.w / 2 - 24) * (spd / d.speed);
+      bo.fireT -= dt;
+      if (bo.fireT <= 0) {
+        const base = Math.max(0.5, d.fireInterval * (bo.enraged ? 0.62 : 1) - G.level * 0.05);
+        bo.fireT = base;
+        const n = bo.enraged ? d.phase2Shots : d.shots;
+        const spread = bo.enraged ? d.phase2Spread : d.spread;
+        for (let i = 0; i < n; i++) {
+          const x = bo.x + bo.w * ((i + 1) / (n + 1));
+          const ang = spread ? U.rand(-spread, spread) : 0;
+          G.bullets.push({
+            x, y: bo.y + bo.h,
+            vx: Math.sin(ang) * 190, vy: Math.cos(ang) * 175,
+            r: 8, t: 0, color: d.bullet
+          });
+        }
+        A.tone({ freq: 200, dur: 0.12, type: 'sawtooth', vol: 0.1, slide: -60 });
+      }
+    }
+
+    // ---- Boss 子弹 ----
+    for (let i = G.bullets.length - 1; i >= 0; i--) {
+      const u = G.bullets[i];
+      u.t += dt;
+      u.x += u.vx * dt; u.y += u.vy * dt;
+      if (u.y > H + 20) { G.bullets.splice(i, 1); continue; }
+      if (u.x < 0 || u.x > W) { u.vx *= -1; u.x = U.clamp(u.x, 0, W); }
+      const pc = U.circleRect(u.x, u.y, u.r, p.x - p.w / 2, p.y, p.w, p.h);
+      if (pc) { G.bullets.splice(i, 1); loseLife(); break; }
+    }
+
+    // ---- 掉落道具 ----
+    for (let i = G.drops.length - 1; i >= 0; i--) {
+      const d = G.drops[i];
+      d.y += d.vy * dt; d.life += dt; d.spin += dt * 3;
+      if (d.y > H + 30) { G.drops.splice(i, 1); continue; }
+      const pc = U.circleRect(d.x, d.y, 12, p.x - p.w / 2, p.y, p.w, p.h);
+      if (pc) { G.drops.splice(i, 1); applyPower(d.kind); }
+    }
+
+    // ---- 清理与过关 ----
+    for (let i = G.bricks.length - 1; i >= 0; i--) if (G.bricks[i].dead) G.bricks.splice(i, 1);
+    if (G.bricks.length === 0 && (!G.boss || G.boss.hp <= 0)) {
+      G.banner = '关卡通过';
+      G.bannerSub = '得分 +' + Math.max(0, G.score - (G.levelStartScore || 0));
+      G.bannerT = 1.2;
+      setState('levelclear');
+    }
+  }
+
+  P.engine = {
+    G, W, H, GX, GY, CW, CH, BASE_PADDLE_W, FIXED,
+    hooks, diff, startGame, launchBall, fireLaser, nextLevel, loseLife,
+    buildLevel, applyPower, setState, update, spawnParticles, resetBall,
+    spawnWave
+  };
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/render.js */
+/* =========================================================================
+   破界 · 打砖块  ——  渲染层（Canvas 2D）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const U = P.util, L = P.levels;
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const view = { s: 1, ox: 0, oy: 0, dpr: 1 };
+
+  // 把「游戏画面矩形」同步给 DOM 覆盖层，避免 HUD 与画面错位
+  function syncHudRect() {
+    const gs = document.documentElement.style;
+    gs.setProperty('--gx', view.ox.toFixed(2) + 'px');
+    gs.setProperty('--gy', view.oy.toFixed(2) + 'px');
+    gs.setProperty('--gw', (P.engine.W * view.s).toFixed(2) + 'px');
+    gs.setProperty('--gh', (P.engine.H * view.s).toFixed(2) + 'px');
+  }
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth, h = window.innerHeight;
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    const s = Math.min(w / P.engine.W, h / P.engine.H);
+    view.s = s;
+    view.ox = (w - P.engine.W * s) / 2;
+    view.oy = (h - P.engine.H * s) / 2;
+    view.dpr = dpr;
+    ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * view.ox, dpr * view.oy);
+    syncHudRect();
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------------------------------------------------------- 辉光缓存
+  const glowCache = new Map();
+  function glowTexture(color, size) {
+    const key = color + '|' + size;
+    let c = glowCache.get(key);
+    if (!c) {
+      c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d');
+      const grd = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      grd.addColorStop(0, color);
+      grd.addColorStop(0.35, color);
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grd; g.fillRect(0, 0, size, size);
+      glowCache.set(key, c);
+    }
+    return c;
+  }
+  function drawGlow(x, y, r, color, alpha) {
+    const s = glowTexture(color, 64);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(s, x - r, y - r, r * 2, r * 2);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // ---------------------------------------------------------- 背景
+  function drawBackground(G, t) {
+    const H = P.engine.H;
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#080c1a');
+    g.addColorStop(0.55, '#05070f');
+    g.addColorStop(1, '#0a0714');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, P.engine.W, H);
+
+    for (const s of G.stars) {
+      ctx.globalAlpha = 0.18 + 0.5 * (0.5 + 0.5 * Math.sin(s.p + t * 1.6));
+      ctx.fillStyle = '#cfe3ff';
+      ctx.fillRect(s.x, s.y, s.s, s.s);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = 'rgba(90,140,220,0.07)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const off = (t * 12) % 48;
+    for (let x = -48; x < P.engine.W + 48; x += 48) { ctx.moveTo(x + off * 0.2, 0); ctx.lineTo(x + off * 0.2, H); }
+    for (let y = -48; y < H + 48; y += 48) { ctx.moveTo(0, y); ctx.lineTo(P.engine.W, y); }
+    ctx.stroke();
+  }
+  // ---------------------------------------------------------- 砖块
+  function drawBricks(G) {
+    for (const b of G.bricks) {
+      const dmg = 1 - b.hp / b.maxHp;
+      ctx.save();
+      roundRect(b.x, b.y, b.w, b.h, 5);
+      ctx.fillStyle = 'rgba(8,12,24,0.85)';
+      ctx.fill();
+
+      const grd = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
+      grd.addColorStop(0, b.color);
+      grd.addColorStop(1, U.shade(b.color, -0.42));
+      ctx.fillStyle = grd;
+      ctx.globalAlpha = 1 - dmg * 0.45;
+      roundRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, 5);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      roundRect(b.x + 3, b.y + 2.5, b.w - 6, Math.max(1.5, b.h * 0.22), 3);
+      ctx.fill();
+
+      if (dmg > 0.33) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(b.x + b.w * 0.28, b.y);
+        ctx.lineTo(b.x + b.w * 0.40, b.y + b.h * 0.5);
+        ctx.lineTo(b.x + b.w * 0.26, b.y + b.h);
+        ctx.stroke();
+      }
+      if (b.bomb) {
+        // 雷区砖块：闪烁标记
+        const pulse = 0.35 + 0.35 * Math.sin(performance.now() / 180 + b.cx);
+        ctx.fillStyle = `rgba(255,255,255,${pulse * 0.5})`;
+        roundRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2, 5);
+        ctx.fill();
+      }
+      if (b.flash > 0) {
+        ctx.fillStyle = `rgba(255,255,255,${b.flash * 0.75})`;
+        roundRect(b.x, b.y, b.w, b.h, 5);
+        ctx.fill();
+        b.flash = Math.max(0, b.flash - 0.08);
+      }
+      ctx.restore();
+      drawGlow(b.cx, b.cy, b.w * 0.34, b.color, 0.13 + dmg * 0.05);
+    }
+  }
+
+  // ---------------------------------------------------------- Boss
+  function drawBoss(G) {
+    const bo = G.boss;
+    if (!bo || bo.hp <= 0) return;
+    const ratio = Math.max(0, bo.hp / bo.maxHp);
+    const d = bo.def;
+    ctx.save();
+    roundRect(bo.x, bo.y, bo.w, bo.h, 12);
+    const grd = ctx.createLinearGradient(bo.x, bo.y, bo.x + bo.w, bo.y + bo.h);
+    grd.addColorStop(0, bo.enraged ? '#be123c' : d.colorA);
+    grd.addColorStop(0.5, bo.enraged ? '#f97316' : d.colorB);
+    grd.addColorStop(1, bo.enraged ? '#facc15' : d.colorB);
+    ctx.fillStyle = grd;
+    ctx.globalAlpha = 0.94;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = bo.enraged ? 'rgba(253,224,71,0.75)' : 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = bo.enraged ? 2 : 1.5;
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = bo.x + 14; x < bo.x + bo.w; x += 18) { ctx.moveTo(x, bo.y + 3); ctx.lineTo(x, bo.y + bo.h - 3); }
+    ctx.stroke();
+
+    if (bo.enraged) {
+      // 狂暴时边缘能量纹
+      const t = performance.now() / 90;
+      ctx.strokeStyle = `rgba(254,240,138,${0.3 + 0.3 * Math.sin(t)})`;
+      ctx.lineWidth = 2.5;
+      roundRect(bo.x - 3, bo.y - 3, bo.w + 6, bo.h + 6, 14);
+      ctx.stroke();
+    }
+    if (bo.flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${bo.flash * 0.6})`;
+      roundRect(bo.x, bo.y, bo.w, bo.h, 12);
+      ctx.fill();
+      bo.flash = Math.max(0, bo.flash - 0.09);
+    }
+
+    // 面部：发光核心 + 双眼
+    const tt = performance.now() / 1000;
+    const pulse = 0.5 + 0.5 * Math.sin(tt * 3.4);
+    const cx = bo.x + bo.w / 2;
+    const coreColor = bo.enraged ? '#fde047' : (d.bullet || '#f472b6');
+    const eyeY = bo.y + bo.h * 0.40;
+    for (const s of [-1, 1]) {
+      const ex = cx + s * bo.w * 0.20;
+      ctx.fillStyle = 'rgba(8,11,24,0.88)';
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, 16, 11, 0, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = bo.enraged ? 'rgba(254,240,138,0.95)' : 'rgba(255,255,255,0.92)';
+      ctx.beginPath(); ctx.ellipse(ex, eyeY, 7 + pulse * 1.2, 7 + pulse * 1.2, 0, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(15,23,42,0.9)';
+      ctx.beginPath(); ctx.arc(ex, eyeY, 3.2, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.arc(ex - 2.2, eyeY - 2.4, 1.8, 0, U.TAU); ctx.fill();
+    }
+    const coreY = bo.y + bo.h * 0.73;
+    drawGlow(cx, coreY, 26 + pulse * 10, coreColor, 0.45 + pulse * 0.3);
+    ctx.fillStyle = coreColor;
+    ctx.beginPath(); ctx.arc(cx, coreY, 7 + pulse * 1.5, 0, U.TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.beginPath(); ctx.arc(cx - 1.8, coreY - 1.8, 2, 0, U.TAU); ctx.fill();
+
+    ctx.restore();
+    drawGlow(bo.x + bo.w / 2, bo.y + bo.h / 2, bo.w * 0.42, bo.enraged ? '#fb923c' : '#f472b6', 0.3);
+
+    // 血条
+    const bw = bo.w, bh = 7, bx = bo.x, by = bo.y - 15;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    roundRect(bx, by, bw, bh, 4); ctx.fill();
+    const grd2 = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    grd2.addColorStop(0, bo.enraged ? '#fb923c' : '#f472b6');
+    grd2.addColorStop(1, bo.enraged ? '#fde047' : '#facc15');
+    ctx.fillStyle = grd2;
+    roundRect(bx, by, Math.max(3, bw * ratio), bh, 4); ctx.fill();
+    ctx.font = '600 12px "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = bo.enraged ? '#fde047' : 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText(bo.name + (bo.enraged ? ' · 狂暴' : ''), bo.x + bo.w / 2, by - 5);
+  }
+
+  // ---------------------------------------------------------- 挡板 / 球 / 道具
+  function drawPaddle(G) {
+    const p = G.paddle;
+    const grad = ctx.createLinearGradient(p.x - p.w / 2, p.y, p.x + p.w / 2, p.y);
+    if (G.laserPower > 0) { grad.addColorStop(0, '#fbbf24'); grad.addColorStop(0.5, '#fef08a'); grad.addColorStop(1, '#fbbf24'); }
+    else { grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.5, '#e0f2fe'); grad.addColorStop(1, '#6366f1'); }
+    ctx.save();
+    roundRect(p.x - p.w / 2, p.y, p.w, p.h, 8);
+    ctx.fillStyle = grad;
+    ctx.shadowColor = G.laserPower > 0 ? 'rgba(250,204,21,0.9)' : 'rgba(56,189,248,0.8)';
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    drawGlow(p.x, p.y + p.h / 2, p.w * 0.32, G.laserPower > 0 ? '#facc15' : '#38bdf8', 0.3);
+  }
+
+  function drawBalls(G) {
+    for (const b of G.balls) {
+      for (let i = 0; i < b.trail.length; i++) {
+        const t = b.trail[i], k = (i / b.trail.length);
+        ctx.globalAlpha = k * 0.35;
+        ctx.fillStyle = '#7dd3fc';
+        ctx.beginPath(); ctx.arc(t.x, t.y, b.r * (0.25 + k * 0.7), 0, U.TAU); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      drawGlow(b.x, b.y, b.r * 3.4, '#38bdf8', 0.55);
+      ctx.fillStyle = '#f0f9ff';
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.arc(b.x - b.r * 0.3, b.y - b.r * 0.3, b.r * 0.38, 0, U.TAU); ctx.fill();
+    }
+  }
+
+  function drawDrops(G) {
+    for (const d of G.drops) {
+      const def = L.POWER[d.kind];
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(Math.sin(d.spin) * 0.25);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = def.color;
+      roundRect(-11, -11, 22, 22, 6); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.font = '700 13px "Microsoft YaHei", sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(def.label, 0, 1);
+      ctx.restore();
+      drawGlow(d.x, d.y, 26, def.color, 0.4);
+    }
+  }
+
+  function drawLasers(G) {
+    for (const l of G.lasers) {
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(l.x - 2, l.y - 14, 4, 16);
+      drawGlow(l.x, l.y - 6, 16, '#facc15', 0.6);
+    }
+  }
+
+  function drawBullets(G) {
+    for (const u of G.bullets) {
+      drawGlow(u.x, u.y, u.r * 3, u.color || '#f87171', 0.6);
+      ctx.fillStyle = '#fecaca';
+      ctx.beginPath(); ctx.arc(u.x, u.y, u.r, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = '#7f1d1d';
+      ctx.beginPath(); ctx.arc(u.x, u.y, u.r * 0.45, 0, U.TAU); ctx.fill();
+    }
+  }
+
+  function drawParticles(G) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of G.particles) {
+      const k = 1 - p.life / p.max;
+      ctx.globalAlpha = k * 0.95;
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * k, 0, U.TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // ---------------------------------------------------------- 冲击波
+  function drawWaves(G) {
+    for (const w of G.waves) {
+      const k = U.clamp(w.t / w.dur, 0, 1);
+      ctx.globalAlpha = (1 - k) * 0.7;
+      ctx.strokeStyle = w.color;
+      ctx.lineWidth = 6 * (1 - k) + 1;
+      ctx.beginPath();
+      ctx.arc(w.x, w.y, w.r0 + (w.r1 - w.r0) * k, 0, U.TAU);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---------------------------------------------------------- 世界内 HUD
+  function drawOverlayText(G) {
+    if (G.state === 'play' && G.balls.some(b => b.stuck)) {
+      ctx.textAlign = 'center';
+      ctx.font = '600 15px "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = 'rgba(226,232,240,0.6)';
+      ctx.fillText('空格 / 点击发球', G.balls[0].x, G.balls[0].y - 26);
+    }
+    if (G.combo >= 3) {
+      ctx.textAlign = 'center';
+      ctx.font = `800 ${26 + Math.min(G.combo, 12)}px "Microsoft YaHei", sans-serif`;
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('×' + (1 + G.combo * 0.1).toFixed(1), P.engine.W / 2, P.engine.H - 74);
+      ctx.font = '600 13px "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = 'rgba(250,204,21,0.75)';
+      ctx.fillText(G.combo + ' 连击', P.engine.W / 2, P.engine.H - 56);
+    }
+    if (G.bannerT > 0 && (G.state === 'play' || G.state === 'levelclear')) {
+      const a = Math.min(1, G.bannerT);
+      ctx.globalAlpha = a;
+      ctx.textAlign = 'center';
+      ctx.font = '800 44px "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillText(G.banner, P.engine.W / 2, P.engine.H * 0.44);
+      ctx.font = '500 15px "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = 'rgba(148,163,184,0.9)';
+      ctx.fillText(G.bannerSub || '', P.engine.W / 2, P.engine.H * 0.44 + 30);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ---------------------------------------------------------- 主渲染
+  function render(G, dt) {
+    const dpr = view.dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#05070f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+
+    drawBackground(G, performance.now() / 1000);
+
+    if (G.shake > 0.2) ctx.translate(U.rand(-G.shake, G.shake), U.rand(-G.shake, G.shake));
+
+    drawBricks(G);
+    drawBoss(G);
+    drawDrops(G);
+    drawLasers(G);
+    if (G.state !== 'title') drawPaddle(G);
+    drawBullets(G);
+    drawBalls(G);
+    drawParticles(G);
+    drawWaves(G);
+
+    ctx.setTransform(dpr * view.s, 0, 0, dpr * view.s, dpr * view.ox, dpr * view.oy);
+    drawOverlayText(G);
+
+    if (G.flash > 0.01) {
+      ctx.fillStyle = `rgba(255,255,255,${G.flash * 0.5})`;
+      ctx.fillRect(0, 0, P.engine.W, P.engine.H);
+    }
+  }
+
+  P.render = { canvas, ctx, view, resize, render, roundRect, drawGlow };
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/ui.js */
+/* =========================================================================
+   破界 · 打砖块  ——  UI 层（DOM 覆盖层 + HUD）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const U = P.util, L = P.levels, S = P.storage;
+  const E = P.engine;
+
+  const $ = id => document.getElementById(id);
+  const el = {
+    hud: $('hud'), hudScore: $('hudScore'), hudBest: $('hudBest'),
+    hudLevel: $('hudLevel'), hudLevelName: $('hudLevelName'), hudLives: $('hudLives'),
+    hudBuffs: $('hudBuffs'),
+    menu: $('menu'), menuTitle: $('menuTitle'), menuSubtitle: $('menuSubtitle'),
+    menuBody: $('menuBody'), menuActions: $('menuActions'),
+    settings: $('settings'), settingsBody: $('settingsBody'),
+    levels: $('levels'), levelGrid: $('levelGrid'),
+    result: $('result'), resultTitle: $('resultTitle'), resultBody: $('resultBody'),
+    resultActions: $('resultActions'),
+    hint: $('hint'),
+    btnMute: $('btnMute'), btnPause: $('btnPause'), btnSettings: $('btnSettings')
+  };
+
+  let toastEl = null, toastTimer = 0;
+
+  // ---------------------------------------------------------------- 提示条
+  function toast(msg, ms) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms || 2200);
+  }
+
+  function hint(text) {
+    el.hint.textContent = text || '';
+    el.hint.style.opacity = text ? '0.55' : '0';
+  }
+
+  // ---------------------------------------------------------------- HUD
+  let lastHud = '';
+  function updateHud(G) {
+    const pr = S.progress();
+    const lv = L.LEVELS[G.level];
+    const sig = G.score + '|' + G.lives + '|' + G.level + '|' + pr.best + '|' +
+      (G.wideTimer > 0 ? 1 : 0) + (G.smallTimer > 0 ? 1 : 0) + (G.laserPower > 0 ? 1 : 0) + (G.slowTimer > 0 ? 1 : 0) + '|' +
+      Math.ceil(G.wideTimer) + ',' + Math.ceil(G.smallTimer) + ',' + Math.ceil(G.laserPower) + ',' + Math.ceil(G.slowTimer);
+    if (sig === lastHud) return;
+    lastHud = sig;
+
+    el.hudScore.textContent = U.pad(G.score, 6);
+    el.hudBest.textContent = '最高 ' + pr.best;
+    el.hudLevel.textContent = (G.level + 1) + ' / ' + L.LEVELS.length;
+    el.hudLevelName.textContent = '关卡 ' + (lv ? lv.name : '');
+    el.hudLives.innerHTML = '';
+    for (let i = 0; i < Math.max(0, G.lives); i++) el.hudLives.appendChild(document.createElement('i'));
+
+    const buffs = [];
+    if (G.wideTimer > 0) buffs.push(['宽', G.wideTimer, '#34d399']);
+    if (G.smallTimer > 0) buffs.push(['窄', G.smallTimer, '#f87171']);
+    if (G.laserPower > 0) buffs.push(['激光', G.laserPower, '#facc15']);
+    if (G.slowTimer > 0) buffs.push(['缓速', G.slowTimer, '#c084fc']);
+    el.hudBuffs.innerHTML = '';
+    for (const [label, t, color] of buffs) {
+      const b = document.createElement('div');
+      b.className = 'buff';
+      b.style.borderColor = color;
+      b.style.color = color;
+      b.textContent = label + ' ' + Math.ceil(t) + 's';
+      el.hudBuffs.appendChild(b);
+    }
+  }
+
+  // ---------------------------------------------------------------- 暂停
+  function showPause() {
+    el.menuTitle.textContent = '暂 停';
+    el.menuSubtitle.textContent = '按 Esc 继续';
+    const G = E.G;
+    el.menuBody.innerHTML =
+      row('当前关卡', (G.level + 1) + ' / ' + L.LEVELS.length + ' · ' + (L.LEVELS[G.level] || {}).name) +
+      row('本局得分', G.score) +
+      row('剩余生命', Math.max(0, G.lives)) +
+      row('连击', G.combo + ' 连');
+    el.menuActions.innerHTML =
+      btn('继续游戏', 'primary', 'resume') +
+      btn('重新开始本关', '', 'restart') +
+      btn('设置', 'ghost', 'settings') +
+      btn('主菜单', 'ghost', 'title');
+    show(el.menu);
+  }
+
+  // ---------------------------------------------------------------- 覆盖层开关
+  function hideAll() {
+    el.menu.classList.add('hidden');
+    el.settings.classList.add('hidden');
+    el.levels.classList.add('hidden');
+    el.result.classList.add('hidden');
+    document.body.classList.remove('modal');
+  }
+  function show(node) {
+    hideAll();
+    node.classList.remove('hidden');
+    document.body.classList.add('modal');
+  }
+
+  // ---------------------------------------------------------------- 主菜单
+  function showTitle() {
+    const pr = S.progress();
+    const st = S.settings();
+    const d = L.DIFFICULTY[st.difficulty] || L.DIFFICULTY.normal;
+    el.menuTitle.textContent = '破 界';
+    el.menuSubtitle.textContent = '打砖块 · 十关 · 双 Boss';
+
+    const cleared = Object.keys(pr.levelClear).length;
+    el.menuBody.innerHTML =
+      row('历史最高分', '<span style="color:#facc15;font-weight:800">' + pr.best + '</span>') +
+      row('通关进度', cleared + ' / ' + L.LEVELS.length + ' 关') +
+      row('累计击碎', pr.totalBricks + ' 块') +
+      row('最高连击', pr.maxCombo + ' 连') +
+      row('当前难度', d.label) +
+      '<div class="hint-line">鼠标移动控制挡板 · 空格 / 点击发球<br>每关有不同布局，两场 Boss 战，越往后球速越快</div>';
+
+    const hasProgress = pr.unlocked > 1;
+    el.menuActions.innerHTML =
+      btn(hasProgress ? '继续游戏' : '开始游戏', 'primary', 'play') +
+      btn('选择关卡', '', 'levels') +
+      btn('设置', 'ghost', 'settings');
+    show(el.menu);
+  }
+
+  function row(k, v) {
+    return '<div class="row"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+  }
+  function btn(label, cls, act) {
+    return '<button class="btn ' + (cls || '') + '" data-act="' + act + '">' + label + '</button>';
+  }
+
+  // ---------------------------------------------------------------- 设置
+  function showSettings() {
+    const st = S.settings();
+    el.settingsBody.innerHTML =
+      '<div class="row"><span class="k">音量</span>' +
+      '<input type="range" id="setVolume" min="0" max="100" value="' + Math.round(st.volume * 100) + '"></div>' +
+      '<div class="row"><span class="k">静音</span>' +
+      '<button class="switch" role="switch" aria-checked="' + (st.muted ? 'true' : 'false') + '" data-act="toggle" data-key="muted"></button></div>' +
+      '<div class="row"><span class="k">难度</span><div class="seg" id="segDiff">' +
+      Object.keys(L.DIFFICULTY).map(k =>
+        '<button data-act="difficulty" data-key="' + k + '" aria-pressed="' + (st.difficulty === k ? 'true' : 'false') + '">' +
+        L.DIFFICULTY[k].label + '</button>').join('') +
+      '</div></div>' +
+      '<div class="row"><span class="k">粒子特效</span>' +
+      '<button class="switch" role="switch" aria-checked="' + (st.particles ? 'true' : 'false') + '" data-act="toggle" data-key="particles"></button></div>' +
+      '<div class="row"><span class="k">屏幕震动</span>' +
+      '<button class="switch" role="switch" aria-checked="' + (st.shake ? 'true' : 'false') + '" data-act="toggle" data-key="shake"></button></div>' +
+      '<div class="row"><span class="k">操作提示</span>' +
+      '<button class="switch" role="switch" aria-checked="' + (st.showHints ? 'true' : 'false') + '" data-act="toggle" data-key="showHints"></button></div>' +
+      '<div class="hint-line">难度设置在下一局开始时生效</div>';
+
+    const v = $('setVolume');
+    v.addEventListener('input', () => {
+      const val = v.value / 100;
+      S.setSetting('volume', val);
+      P.audio.setVolume(val);
+    });
+    show(el.settings);
+  }
+
+  // ---------------------------------------------------------------- 关卡选择
+  function showLevels() {
+    const pr = S.progress();
+    el.levelGrid.innerHTML = '';
+    L.LEVELS.forEach((lv, i) => {
+      const locked = i + 1 > pr.unlocked;
+      const best = pr.levelBest[String(i + 1)] || 0;
+      const cleared = !!pr.levelClear[String(i + 1)];
+      const card = document.createElement('div');
+      card.className = 'lvcard' + (locked ? ' locked' : '');
+      card.innerHTML =
+        (lv.boss ? '<span class="tag">BOSS</span>' : '') +
+        '<div class="n">' + (i + 1) + '</div>' +
+        '<div class="nm">' + lv.name + (locked ? ' · 未解锁' : '') + '</div>' +
+        '<div class="sc">' + (cleared ? '已通关 · ' : '') + (best ? '最佳 ' + best : '') + '</div>';
+      if (!locked) card.addEventListener('click', () => { P.audio.ui(); P.ui.playLevel(i); });
+      el.levelGrid.appendChild(card);
+    });
+    show(el.levels);
+  }
+
+  // ---------------------------------------------------------------- 结算
+  function showResult(kind, score, stat) {
+    const pr = S.progress();
+    const isWin = kind === 'win';
+    el.resultTitle.textContent = isWin ? '通 关 ！' : '游 戏 结 束';
+    el.resultBody.innerHTML =
+      '<div class="big">' + score + '</div>' +
+      '<div class="hint-line">本局得分</div>' +
+      row('到达关卡', (E.G.level + 1) + ' / ' + L.LEVELS.length + ' · ' + (L.LEVELS[E.G.level] || {}).name) +
+      row('击碎砖块', (stat && stat.bricks || 0) + ' 块') +
+      row('最高连击', (stat && stat.maxCombo || 0) + ' 连') +
+      row('用时', U.fmtTime((stat && stat.elapsed) || 0)) +
+      row('历史最高', pr.best);
+    el.resultActions.innerHTML =
+      btn('再来一局', 'primary', 'retry') +
+      btn('选择关卡', '', 'levels') +
+      btn('主菜单', 'ghost', 'title');
+    show(el.result);
+  }
+
+  // ---------------------------------------------------------------- 事件
+  function onAct(act, node) {
+    const A = P.audio;
+    switch (act) {
+      case 'play': A.ui(); P.ui.playLevel(S.progress().unlocked - 1); break;
+      case 'retry': A.ui(); P.ui.retry(); break;
+      case 'title': A.ui(); P.ui.toTitle(); break;
+      case 'levels': A.ui(); P.ui.openLevels(); break;
+      case 'settings': A.ui(); P.ui.openSettings(); break;
+      case 'settings-close': A.ui(); P.ui.closeSettings(); break;
+      case 'levels-close': A.ui(); P.ui.closeLevels(); break;
+      case 'pause': A.ui(); P.ui.togglePause(); break;
+      case 'resume': A.ui(); P.ui.resume(); break;
+      case 'restart': A.ui(); P.ui.restart(); break;
+      case 'levels-reset':
+        if (confirm('确定要清空全部进度吗？此操作不可撤销。')) {
+          S.resetProgress();
+          A.ui();
+          toast('进度已重置');
+          P.ui.openLevels();
+        }
+        break;
+      case 'toggle': {
+        const key = node.getAttribute('data-key');
+        const val = !S.settings()[key];
+        S.setSetting(key, val);
+        node.setAttribute('aria-checked', val ? 'true' : 'false');
+        if (key === 'muted') { P.audio.setMuted(val); P.ui.syncMute(); }
+        A.ui();
+        break;
+      }
+      case 'difficulty': {
+        const key = node.getAttribute('data-key');
+        S.setSetting('difficulty', key);
+        const seg = $('segDiff');
+        if (seg) seg.querySelectorAll('button').forEach(b =>
+          b.setAttribute('aria-pressed', b.getAttribute('data-key') === key ? 'true' : 'false'));
+        A.ui();
+        break;
+      }
+    }
+  }
+
+  function bind() {
+    document.addEventListener('click', e => {
+      const node = e.target.closest('[data-act]');
+      if (!node) return;
+      const act = node.getAttribute('data-act');
+      if (act === 'settings-close') { /* 已有 data-act */ }
+      onAct(act, node);
+    });
+
+    el.btnSettings.addEventListener('click', () => onAct('settings', el.btnSettings));
+    el.btnPause.addEventListener('click', () => onAct('pause', el.btnPause));
+    el.btnMute.addEventListener('click', () => {
+      const val = !S.settings().muted;
+      S.setSetting('muted', val);
+      P.audio.setMuted(val);
+      syncMute();
+      P.audio.ui();
+    });
+  }
+
+  function syncMute() {
+    const muted = S.settings().muted;
+    el.btnMute.textContent = muted ? '✕' : '♪';
+    el.btnMute.title = muted ? '取消静音 (M)' : '静音 (M)';
+  }
+
+  // ---------------------------------------------------------------- 对外接口
+  let overlayPaused = false;   // 打开覆盖层时是否临时暂停了游戏
+
+  function pauseForOverlay() {
+    if (E.G.state === 'play') { overlayPaused = true; E.setState('pause'); }
+  }
+  function resumeAfterOverlay() {
+    if (overlayPaused) {
+      overlayPaused = false;
+      if (E.G.state === 'pause') E.setState('play');
+    }
+  }
+
+  const api = {
+    el, toast, hint, updateHud, hideAll, showTitle, showSettings, showLevels, showResult,
+    showPause, bind, syncMute,
+
+    /** 从标题进入游戏 */
+    playLevel(i) {
+      hideAll();
+      resumeAfterOverlay();
+      E.startGame(i);
+    },
+    retry() {
+      hideAll();
+      resumeAfterOverlay();
+      E.startGame(E.G.level);
+    },
+    toTitle() {
+      E.setState('title');
+      hideAll();
+      resumeAfterOverlay();
+      showTitle();
+    },
+    openLevels() { pauseForOverlay(); showLevels(); },
+    closeLevels() {
+      hideAll();
+      resumeAfterOverlay();
+      const s = E.G.state;
+      if (s === 'title') showTitle();
+      else if (s === 'gameover' || s === 'win') showResult(s, E.G.score, E.G.stat);
+      else if (s === 'pause') showPause();
+    },
+    openSettings() { pauseForOverlay(); showSettings(); },
+    closeSettings() {
+      hideAll();
+      resumeAfterOverlay();
+      const s = E.G.state;
+      if (s === 'title') showTitle();
+      else if (s === 'gameover' || s === 'win') showResult(s, E.G.score, E.G.stat);
+      else if (s === 'pause') showPause();
+    },
+    togglePause() {
+      if (P.app && P.app.togglePause) P.app.togglePause();
+    },
+    resume() {
+      hideAll();
+      resumeAfterOverlay();
+      if (E.G.state === 'pause') E.setState('play');
+    },
+    restart() {
+      hideAll();
+      resumeAfterOverlay();
+      E.startGame(E.G.level);
+    }
+  };
+
+  P.ui = api;
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* js/main.js */
+/* =========================================================================
+   破界 · 打砖块  ——  入口层（主循环 · 输入 · 钩子接线）
+   ========================================================================= */
+(function (P) {
+  'use strict';
+
+  const E = P.engine, R = P.render, UI = P.ui, S = P.storage, A = P.audio;
+  const G = E.G;
+
+  // ---------------------------------------------------------------- 钩子接线
+  E.hooks.levelClear = function (lv) {
+    UI.toast('第 ' + lv + ' 关通过');
+  };
+
+  E.hooks.unlock = function (lv) {
+    UI.toast('解锁新关卡：第 ' + lv + ' 关');
+    A.unlock();
+  };
+
+  E.hooks.gameOver = function (score, stat) {
+    UI.showResult('gameover', score, stat);
+  };
+
+  E.hooks.win = function (score) {
+    S.recordStats(G.stat.bricks, G.stat.maxCombo, G.stat.elapsed);
+    UI.showResult('win', score, G.stat);
+  };
+
+  E.hooks.stateChange = function (s) {
+    UI.el.hud.classList.toggle('hidden', s === 'title');
+    if (s === 'play') {
+      UI.hideAll();
+      UI.hint(S.settings().showHints ? '鼠标移动挡板 · 空格发球 · Esc 暂停' : '');
+    } else if (s !== 'pause') {
+      UI.hint('');
+    }
+  };
+
+  // ---------------------------------------------------------------- 暂停开关
+  function overlayOpen() {
+    return !UI.el.levels.classList.contains('hidden') ||
+           !UI.el.settings.classList.contains('hidden');
+  }
+
+  P.app = {
+    togglePause() {
+      if (overlayOpen()) {
+        if (!UI.el.levels.classList.contains('hidden')) UI.closeLevels();
+        else UI.closeSettings();
+        return;
+      }
+      if (G.state === 'play') {
+        E.setState('pause');
+        UI.showPause();
+      } else if (G.state === 'pause') {
+        UI.resume();
+      }
+    }
+  };
+
+  // ---------------------------------------------------------------- 输入
+  function pointerX(clientX) {
+    const rect = R.canvas.getBoundingClientRect();
+    const x = (clientX - rect.left - R.view.ox) / (R.view.s || 1);
+    return Math.max(0, Math.min(E.W, x));
+  }
+
+  R.canvas.addEventListener('pointermove', e => {
+    G.mouse.x = pointerX(e.clientX);
+  });
+
+  R.canvas.addEventListener('pointerdown', e => {
+    G.mouse.x = pointerX(e.clientX);
+    if (G.state === 'play') E.launchBall();
+  });
+
+  // 触摸：手指控制挡板，轻点发球
+  R.canvas.addEventListener('touchmove', e => {
+    if (!e.touches.length) return;
+    e.preventDefault();
+    G.mouse.x = pointerX(e.touches[0].clientX);
+  }, { passive: false });
+
+  R.canvas.addEventListener('touchstart', e => {
+    if (!e.touches.length) return;
+    e.preventDefault();
+    G.mouse.x = pointerX(e.touches[0].clientX);
+    if (G.state === 'play') E.launchBall();
+  }, { passive: false });
+
+  window.addEventListener('keydown', e => {
+    const k = e.key;
+    if (k === 'ArrowLeft' || k === 'ArrowRight') { G.keys[k] = true; e.preventDefault(); return; }
+    if (k === ' ' || k === 'Spacebar') {
+      e.preventDefault();
+      if (G.state === 'play') E.launchBall();
+      else if (G.state === 'title') { A.ui(); UI.playLevel(S.progress().unlocked - 1); }
+      return;
+    }
+    if (k === 'Escape') {
+      e.preventDefault();
+      P.app.togglePause();
+      return;
+    }
+    if (k === 'p' || k === 'P') {
+      e.preventDefault();
+      P.app.togglePause();
+      return;
+    }
+    if (k === 'r' || k === 'R') {
+      if (G.state === 'play' || G.state === 'pause') {
+        e.preventDefault();
+        UI.hideAll();
+        E.startGame(G.level);
+      }
+      return;
+    }
+    if (k === 'm' || k === 'M') {
+      e.preventDefault();
+      const v = !S.settings().muted;
+      S.setSetting('muted', v);
+      A.setMuted(v);
+      UI.syncMute();
+      return;
+    }
+  });
+
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') G.keys[e.key] = false;
+  });
+
+  // 失焦自动暂停
+  window.addEventListener('blur', () => {
+    if (G.state === 'play') { E.setState('pause'); UI.showPause(); }
+  });
+
+  // 首次交互解锁 WebAudio
+  function unlockAudio() {
+    A.init(); A.resume();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  }
+  window.addEventListener('pointerdown', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+
+  // ---------------------------------------------------------------- 主循环
+  let last = 0, acc = 0;
+
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (!last) { last = now; return; }
+    let dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.25) dt = 0.25;          // 切标签页回来时不要一次跳太多
+    acc += dt;
+
+    let steps = 0;
+    while (acc >= E.FIXED && steps < 8) {
+      E.update(E.FIXED);
+      acc -= E.FIXED;
+      steps++;
+    }
+    if (steps >= 8) acc = 0;
+
+    R.render(G, dt);
+    UI.updateHud(G);
+  }
+
+  // ---------------------------------------------------------------- 启动
+  function boot() {
+    const st = S.settings();
+    A.setVolume(st.volume);
+    A.setMuted(st.muted);
+
+    R.resize();
+    UI.bind();
+    UI.syncMute();
+
+    G.state = 'title';
+    UI.el.hud.classList.add('hidden');
+    UI.showTitle();
+
+    requestAnimationFrame(frame);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})(window.POJIE = window.POJIE || {});
+
+</script>
+<script>
+/* 网页版提示（由 build/build.js 注入） */
+(function () {
+  'use strict';
+  try {
+    if (window.pojie) return; /* 跑在 Electron 里：什么都不做 */
+    try { window.localStorage.setItem('pojie.web', '1'); } catch (e) { /* 隐私模式忽略 */ }
+    var el = document.createElement('div');
+    el.id = 'pojie-web-tip';
+    el.textContent = '网页版：按 R 键重开、点击画面开始';
+    el.setAttribute('style', [
+      'position:fixed', 'left:50%', 'bottom:26px', 'transform:translateX(-50%)',
+      'z-index:9999', 'pointer-events:none', 'white-space:nowrap',
+      'padding:6px 14px', 'border-radius:999px',
+      'background:rgba(8,12,24,.72)', 'border:1px solid rgba(56,189,248,.28)',
+      'color:#dbe7ff', 'opacity:.92',
+      'font:12px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif',
+      'letter-spacing:.5px'
+    ].join(';') );
+    if (document.body) document.body.appendChild(el);
+  } catch (e) { /* 提示失败也绝不能影响游戏 */ }
+})();
+</script>
+</body>
+</html>

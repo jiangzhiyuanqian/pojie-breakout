@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>破界 · 打砖块</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- ====================== HUD ====================== -->
+<div id="hud" class="layer">
+  <div class="hud-top">
+    <div class="hud-left">
+      <div class="score" id="hudScore">000000</div>
+      <div class="label">分数 SCORE</div>
+      <div class="best" id="hudBest">最高 0</div>
+    </div>
+    <div class="hud-center">
+      <div class="levelno" id="hudLevel">1 / 10</div>
+      <div class="label" id="hudLevelName">关卡 破晓</div>
+    </div>
+    <div class="hud-right">
+      <div class="lives" id="hudLives"></div>
+      <div class="label">生命</div>
+    </div>
+  </div>
+  <div class="buffs" id="hudBuffs"></div>
+  <div class="iconbar">
+    <button class="iconbtn" id="btnMute" title="静音 (M)">♪</button>
+    <button class="iconbtn" id="btnPause" title="暂停 (Esc)">⏸</button>
+    <button class="iconbtn" id="btnSettings" title="设置">⚙</button>
+  </div>
+</div>
+
+<!-- ====================== 菜单层 ====================== -->
+<div id="menu" class="layer overlay hidden">
+  <div class="panel" id="menuPanel">
+    <h1 class="logo" id="menuTitle">破 界</h1>
+    <div class="subtitle" id="menuSubtitle">打砖块 · 十关 · Boss 战</div>
+    <div class="menu-body" id="menuBody"></div>
+    <div class="menu-actions" id="menuActions"></div>
+  </div>
+</div>
+
+<!-- ====================== 设置弹层 ====================== -->
+<div id="settings" class="layer overlay hidden">
+  <div class="panel narrow">
+    <h2 class="ptitle">设置</h2>
+    <div class="menu-body" id="settingsBody"></div>
+    <div class="menu-actions">
+      <button class="btn" data-act="settings-close">返回</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== 关卡选择 ====================== -->
+<div id="levels" class="layer overlay hidden">
+  <div class="panel wide">
+    <h2 class="ptitle">选择关卡</h2>
+    <div class="level-grid" id="levelGrid"></div>
+    <div class="menu-actions">
+      <button class="btn" data-act="levels-close">返回</button>
+      <button class="btn primary" data-act="levels-reset">重置进度</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== 结算 ====================== -->
+<div id="result" class="layer overlay hidden">
+  <div class="panel">
+    <h2 class="ptitle" id="resultTitle">游戏结束</h2>
+    <div class="menu-body" id="resultBody"></div>
+    <div class="menu-actions" id="resultActions"></div>
+  </div>
+</div>
+
+<div id="hint" class="hint"></div>
+
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

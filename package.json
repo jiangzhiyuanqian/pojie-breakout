@@ -1,0 +1,79 @@
+{
+  "name": "pojie-breakout",
+  "version": "1.0.0",
+  "description": "破界 · 打砖块 —— 纯前端 HTML5 Canvas 打砖块游戏，十关 + Boss 战，支持 Electron 桌面打包与网页单文件发行。",
+  "main": "electron/main.js",
+  "author": {
+    "name": "jiangzhiyuanqian",
+    "email": "qli80082@gmail.com"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jiangzhiyuanqian/pojie-breakout"
+  },
+  "keywords": [
+    "game",
+    "breakout",
+    "html5",
+    "canvas",
+    "electron",
+    "破界",
+    "打砖块"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "build:html": "node build/build.js",
+    "build:win": "npm run build:html && electron-builder --win --publish never",
+    "build:dir": "npm run build:html && electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.qianx.pojie",
+    "productName": "破界打砖块",
+    "copyright": "Copyright © 2026 jiangzhiyuanqian",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "破界打砖块"
+    },
+    "portable": {
+      "artifactName": "破界打砖块-v${version}-${arch}-portable.${ext}"
+    },
+    "artifactName": "破界打砖块-v${version}-${arch}.${ext}",
+    "compression": "maximum"
+  }
+}

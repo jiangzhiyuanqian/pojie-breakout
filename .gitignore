@@ -1,0 +1,72 @@
+# ── 依赖 ────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/install-state.gz
+
+# ── 构建产物 ────────────────────────────────────────────
+# 注意：这里用 dist/* 而不是 dist/
+# Git 不会把“被整体排除的目录”里的文件重新包含进来，
+# 只有目录本身不被排除，下面的 !dist/*.html 才能真正放行单文件网页版。
+dist/*
+!dist/*.html
+
+# electron-builder 的最终安装包
+release/
+out/
+*.exe
+*.exe.blockmap
+*.blockmap
+*.zip
+*.7z
+
+# ── 日志 ────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+
+# ── 缓存与临时文件 ──────────────────────────────────────
+.cache/
+.temp/
+tmp/
+coverage/
+*.tsbuildinfo
+
+# ── 编辑器 / IDE ───────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── 系统文件 ────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ── Python ──────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# ── 环境变量（不要提交密钥） ────────────────────────────
+.env
+.env.*
+!.env.example
