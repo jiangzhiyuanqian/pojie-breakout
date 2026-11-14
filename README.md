@@ -11,7 +11,7 @@
 
 | 文件 | 说明 |
 | --- | --- |
-| `PojieBreakout-v1.0.0-x64-setup.exe` | Windows 10/11 x64 安装包，可选安装目录、创建桌面快捷方式 |
+| `PojieBreakout-v1.0.0-x64.exe` | Windows 10/11 x64 安装包，可选安装目录、创建桌面快捷方式 |
 | `PojieBreakout-v1.0.0-x64-portable.exe` | 免安装便携版，下载后双击即玩 |
 | `PojieBreakout-v1.0.0-web.html` | 单文件网页版，浏览器直接打开，无需安装 |
 

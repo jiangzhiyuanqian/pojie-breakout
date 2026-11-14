@@ -71,9 +71,9 @@
       "shortcutName": "破界打砖块"
     },
     "portable": {
-      "artifactName": "破界打砖块-v${version}-${arch}-portable.${ext}"
+      "artifactName": "PojieBreakout-v${version}-${arch}-portable.${ext}"
     },
-    "artifactName": "破界打砖块-v${version}-${arch}.${ext}",
+    "artifactName": "PojieBreakout-v${version}-${arch}.${ext}",
     "compression": "maximum"
   }
 }

@@ -128,8 +128,6 @@ jobs:
             release/*.exe
             release/*.blockmap
             release/latest.yml
-            release/*.yml
-            release/*.yaml
             release/*.zip
 
   # ── 3. 构建单文件网页版并一起上传 ────────────────────────────────
@@ -158,8 +156,13 @@ jobs:
       - name: 构建单文件 HTML
         run: npm run build:html
 
+      - name: 规范化网页版文件名
+        run: |
+          mkdir -p dist/upload
+          cp dist/*.html "dist/upload/PojieBreakout-${{ needs.meta.outputs.tag }}-web.html"
+
       - name: 列出构建产物
-        run: ls -la dist
+        run: ls -la dist/upload
 
       - name: 上传单文件网页版到 Release
         uses: softprops/action-gh-release@v2
@@ -168,4 +171,4 @@ jobs:
           prerelease: ${{ needs.meta.outputs.prerelease }}
           fail_on_unmatched_files: false
           files: |
-            dist/*.html
+            dist/upload/*.html
